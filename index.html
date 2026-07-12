@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ระบบแจ้งซ่อมรถ - รวมสินไทยกรุ๊ป</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Sarabun", "Segoe UI", Tahoma, sans-serif;
+    background: #f2f4f7;
+    margin: 0;
+    padding: 0;
+    color: #1f2937;
+  }
+  header {
+    background: #0f5132;
+    color: #fff;
+    padding: 20px 16px;
+    text-align: center;
+  }
+  header h1 { margin: 0; font-size: 1.4rem; }
+  header p { margin: 4px 0 0; font-size: 0.9rem; opacity: 0.9; }
+
+  .tabs {
+    display: flex;
+    max-width: 720px;
+    margin: 16px auto 0;
+    padding: 0 16px;
+    gap: 8px;
+  }
+  .tab-btn {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 10px 10px 0 0;
+    background: #e5e7eb;
+    color: #4b5563;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .tab-btn.active {
+    background: #fff;
+    color: #0f5132;
+  }
+
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0 16px 60px;
+  }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  .card {
+    background: #fff;
+    border-radius: 0 0 12px 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .card.plain { border-radius: 12px; }
+  .card h2 {
+    font-size: 1.1rem;
+    margin-top: 0;
+    margin-bottom: 16px;
+    border-bottom: 2px solid #0f5132;
+    padding-bottom: 8px;
+    color: #0f5132;
+  }
+  label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 6px;
+    font-size: 0.95rem;
+  }
+  .req { color: #dc2626; }
+  input, select, textarea {
+    width: 100%;
+    padding: 12px;
+    font-size: 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    font-family: inherit;
+    background: #fff;
+  }
+  textarea { resize: vertical; min-height: 80px; }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: #0f5132;
+    box-shadow: 0 0 0 3px rgba(15,81,50,0.15);
+  }
+  .row2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  @media (max-width: 500px) {
+    .row2 { grid-template-columns: 1fr; }
+  }
+  button.submit {
+    width: 100%;
+    padding: 16px;
+    background: #0f5132;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  button.submit:active { background: #0b3d26; }
+  button.submit:disabled { background: #9ca3af; cursor: not-allowed; }
+  .msg {
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    font-size: 0.95rem;
+    display: none;
+  }
+  .msg.success { background: #dcfce7; color: #166534; display: block; }
+  .msg.error { background: #fee2e2; color: #991b1b; display: block; }
+  .msg.warn { background: #fef9c3; color: #854d0e; display: block; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+  th, td {
+    padding: 8px 6px;
+    border-bottom: 1px solid #e5e7eb;
+    text-align: left;
+    white-space: nowrap;
+  }
+  th { background: #f3f4f6; color: #374151; }
+  .table-wrap { overflow-x: auto; }
+  .refresh-btn {
+    background: none;
+    border: 1px solid #0f5132;
+    color: #0f5132;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    float: right;
+  }
+  .edit-btn {
+    background: #0f5132;
+    color: #fff;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .badge.wait { background: #fef9c3; color: #854d0e; }
+  .badge.doing { background: #dbeafe; color: #1e40af; }
+  .badge.done { background: #dcfce7; color: #166534; }
+  .footer-note {
+    text-align: center;
+    font-size: 0.8rem;
+    color: #6b7280;
+    margin-top: 10px;
+  }
+  .search-box {
+    margin-bottom: 12px;
+  }
+
+  /* Modal */
+  .overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 50;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  .overlay.open { display: flex; }
+  .modal {
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    width: 100%;
+    max-width: 480px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .modal h3 {
+    margin-top: 0;
+    color: #0f5132;
+    border-bottom: 2px solid #0f5132;
+    padding-bottom: 8px;
+  }
+  .modal-info {
+    background: #f3f4f6;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 0.85rem;
+    margin-bottom: 16px;
+    color: #4b5563;
+  }
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+  }
+  .modal-actions button {
+    flex: 1;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+  }
+  .btn-cancel { background: #e5e7eb; color: #374151; }
+  .btn-save { background: #0f5132; color: #fff; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🚚 ระบบแจ้งซ่อมรถ</h1>
+  <p>รวมสินไทยกรุ๊ป</p>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn active" id="tabBtnNew" onclick="switchTab('new')">📝 แจ้งซ่อมใหม่</button>
+  <button class="tab-btn" id="tabBtnHistory" onclick="switchTab('history')">📋 ประวัติ / แก้ไขสถานะ</button>
+</div>
+
+<div class="container">
+
+  <!-- หน้าแจ้งซ่อมใหม่ -->
+  <div class="page active" id="page-new">
+    <div class="card">
+      <h2>แจ้งซ่อมรถ</h2>
+      <div id="msgBox" class="msg"></div>
+
+      <form id="repairForm">
+        <div class="row2">
+          <div>
+            <label>วันที่แจ้ง <span class="req">*</span></label>
+            <input type="date" id="reportDate" required>
+          </div>
+          <div>
+            <label>เวลา <span class="req">*</span></label>
+            <input type="time" id="reportTime" required>
+          </div>
+        </div>
+
+        <label>ชื่อผู้แจ้ง <span class="req">*</span></label>
+        <input type="text" id="reporter" placeholder="ชื่อ-นามสกุล" required>
+
+        <label>แผนก / หน่วยงาน <span class="req">*</span></label>
+        <input type="text" id="department" placeholder="เช่น ฝ่ายขนส่ง" required>
+
+        <div class="row2">
+          <div>
+            <label>ทะเบียนรถ <span class="req">*</span></label>
+            <input type="text" id="plate" placeholder="เช่น 82-1234" required>
+          </div>
+          <div>
+            <label>ประเภทรถ</label>
+            <select id="vehicleType">
+              <option value="รถบรรทุก">รถบรรทุก</option>
+              <option value="รถกระบะ">รถกระบะ</option>
+              <option value="รถตู้">รถตู้</option>
+              <option value="รถเก๋ง">รถเก๋ง</option>
+              <option value="อื่นๆ">อื่นๆ</option>
+            </select>
+          </div>
+        </div>
+
+        <label>เลขไมล์ปัจจุบัน (กม.)</label>
+        <input type="number" id="mileage" placeholder="ไม่บังคับ" min="0">
+
+        <label>อาการ / ปัญหาที่พบ <span class="req">*</span></label>
+        <textarea id="issue" placeholder="อธิบายอาการที่พบโดยละเอียด" required></textarea>
+
+        <div class="row2">
+          <div>
+            <label>ระดับความเร่งด่วน</label>
+            <select id="urgency">
+              <option value="ปกติ">ปกติ</option>
+              <option value="ด่วน">ด่วน</option>
+              <option value="ด่วนมาก">ด่วนมาก</option>
+            </select>
+          </div>
+          <div>
+            <label>สถานะ</label>
+            <select id="status">
+              <option value="รอดำเนินการ">รอดำเนินการ</option>
+              <option value="กำลังซ่อม">กำลังซ่อม</option>
+              <option value="ซ่อมเสร็จแล้ว">ซ่อมเสร็จแล้ว</option>
+            </select>
+          </div>
+        </div>
+
+        <label>ผู้รับผิดชอบ / ช่างซ่อม</label>
+        <input type="text" id="technician" placeholder="ไม่บังคับ กรอกภายหลังได้">
+
+        <label>ค่าใช้จ่าย (บาท)</label>
+        <input type="number" id="cost" placeholder="ไม่บังคับ กรอกภายหลังได้" min="0">
+
+        <label>หมายเหตุ</label>
+        <textarea id="note" placeholder="ไม่บังคับ"></textarea>
+
+        <button type="submit" class="submit" id="submitBtn">ส่งแจ้งซ่อม</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>รายการแจ้งซ่อมล่าสุด <button class="refresh-btn" type="button" onclick="loadPreview()">🔄 รีเฟรช</button></h2>
+      <div id="previewMsg" class="msg"></div>
+      <div class="table-wrap">
+        <table id="previewTable">
+          <thead>
+            <tr>
+              <th>วันที่</th>
+              <th>ทะเบียน</th>
+              <th>ผู้แจ้ง</th>
+              <th>อาการ</th>
+              <th>ความเร่งด่วน</th>
+              <th>สถานะ</th>
+            </tr>
+          </thead>
+          <tbody id="previewBody">
+            <tr><td colspan="6" style="text-align:center;color:#9ca3af;">ยังไม่มีข้อมูล / กด รีเฟรช</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="footer-note">ข้อมูลทั้งหมดถูกบันทึกลง Google Sheet กลางโดยอัตโนมัติ</p>
+    </div>
+  </div>
+
+  <!-- หน้าประวัติ / แก้ไขสถานะ -->
+  <div class="page" id="page-history">
+    <div class="card plain">
+      <h2>ประวัติการแจ้งซ่อมทั้งหมด <button class="refresh-btn" type="button" onclick="loadHistory()">🔄 รีเฟรช</button></h2>
+      <input type="text" class="search-box" id="searchBox" placeholder="ค้นหาด้วยทะเบียนรถ หรือ ชื่อผู้แจ้ง">
+      <div id="historyMsg" class="msg"></div>
+      <div class="table-wrap">
+        <table id="historyTable">
+          <thead>
+            <tr>
+              <th>วันที่แจ้ง</th>
+              <th>ทะเบียน</th>
+              <th>ผู้แจ้ง</th>
+              <th>อาการ</th>
+              <th>ความเร่งด่วน</th>
+              <th>สถานะ</th>
+              <th>ผู้รับผิดชอบ</th>
+              <th>วันที่ซ่อมเสร็จ</th>
+              <th>ค่าใช้จ่าย</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="historyBody">
+            <tr><td colspan="10" style="text-align:center;color:#9ca3af;">กำลังโหลด...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="footer-note">กด "แก้ไข" เพื่ออัปเดตสถานะให้เป็นปัจจุบันของแต่ละคัน</p>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal แก้ไขสถานะ -->
+<div class="overlay" id="editOverlay">
+  <div class="modal">
+    <h3>แก้ไขสถานะการซ่อม</h3>
+    <div class="modal-info" id="editInfo"></div>
+    <div id="editMsg" class="msg"></div>
+
+    <label>สถานะ</label>
+    <select id="editStatus">
+      <option value="รอดำเนินการ">รอดำเนินการ</option>
+      <option value="กำลังซ่อม">กำลังซ่อม</option>
+      <option value="ซ่อมเสร็จแล้ว">ซ่อมเสร็จแล้ว</option>
+    </select>
+
+    <label>ผู้รับผิดชอบ / ช่างซ่อม</label>
+    <input type="text" id="editTechnician" placeholder="ไม่บังคับ">
+
+    <label>วันที่ซ่อมเสร็จ</label>
+    <input type="date" id="editFinishDate">
+
+    <label>ค่าใช้จ่าย (บาท)</label>
+    <input type="number" id="editCost" min="0" placeholder="ไม่บังคับ">
+
+    <label>หมายเหตุ</label>
+    <textarea id="editNote" placeholder="ไม่บังคับ"></textarea>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" type="button" onclick="closeEditModal()">ยกเลิก</button>
+      <button class="btn-save" type="button" id="saveEditBtn" onclick="saveEdit()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ==== ตั้งค่าตรงนี้: วาง URL ของ Google Apps Script Web App ที่ deploy แล้ว ====
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzCqGBQyR0TcBF5tJtD7EqXlNpm_GworyC3XaOdcHo40OrZvwFUf3-uVFX05XwGmjXfBQ/exec";
+  // ==========================================================================
+
+  const form = document.getElementById('repairForm');
+  const msgBox = document.getElementById('msgBox');
+  const submitBtn = document.getElementById('submitBtn');
+  const previewMsg = document.getElementById('previewMsg');
+  const previewBody = document.getElementById('previewBody');
+  const historyMsg = document.getElementById('historyMsg');
+  const historyBody = document.getElementById('historyBody');
+  const searchBox = document.getElementById('searchBox');
+
+  let historyRows = [];
+  let editingId = null;
+
+  // ตั้งวันที่/เวลาเริ่มต้นเป็นปัจจุบัน
+  function resetDateTimeDefaults() {
+    const now = new Date();
+    document.getElementById('reportDate').value = now.toISOString().slice(0,10);
+    document.getElementById('reportTime').value = now.toTimeString().slice(0,5);
+  }
+  resetDateTimeDefaults();
+
+  function showMsg(el, text, type) {
+    el.textContent = text;
+    el.className = 'msg ' + type;
+  }
+
+  function isConfigured() {
+    return SCRIPT_URL && SCRIPT_URL.indexOf('https://script.google.com') === 0;
+  }
+
+  function badgeFor(status) {
+    if (status === 'ซ่อมเสร็จแล้ว') return '<span class="badge done">' + status + '</span>';
+    if (status === 'กำลังซ่อม') return '<span class="badge doing">' + status + '</span>';
+    return '<span class="badge wait">' + (status || '') + '</span>';
+  }
+
+  function switchTab(name) {
+    document.getElementById('page-new').classList.toggle('active', name === 'new');
+    document.getElementById('page-history').classList.toggle('active', name === 'history');
+    document.getElementById('tabBtnNew').classList.toggle('active', name === 'new');
+    document.getElementById('tabBtnHistory').classList.toggle('active', name === 'history');
+    if (name === 'history') loadHistory();
+  }
+
+  // ---------- ส่งแจ้งซ่อมใหม่ ----------
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    const payload = {
+      mode: 'create',
+      date: document.getElementById('reportDate').value,
+      time: document.getElementById('reportTime').value,
+      reporter: document.getElementById('reporter').value.trim(),
+      department: document.getElementById('department').value.trim(),
+      plate: document.getElementById('plate').value.trim(),
+      vehicleType: document.getElementById('vehicleType').value,
+      mileage: document.getElementById('mileage').value,
+      issue: document.getElementById('issue').value.trim(),
+      urgency: document.getElementById('urgency').value,
+      status: document.getElementById('status').value,
+      technician: document.getElementById('technician').value.trim(),
+      cost: document.getElementById('cost').value,
+      note: document.getElementById('note').value.trim()
+    };
+
+    if (!isConfigured()) {
+      const backup = JSON.parse(localStorage.getItem('repairBackup') || '[]');
+      backup.push(payload);
+      localStorage.setItem('repairBackup', JSON.stringify(backup));
+      showMsg(msgBox, '⚠️ ยังไม่ได้เชื่อมต่อ Google Sheet (ดูคู่มือติดตั้ง) ข้อมูลถูกเก็บสำรองไว้ในเครื่องนี้ชั่วคราว', 'warn');
+      form.reset();
+      resetDateTimeDefaults();
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'กำลังส่ง...';
+
+    fetch(SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    }).then(function () {
+      showMsg(msgBox, '✅ ส่งข้อมูลแจ้งซ่อมเรียบร้อยแล้ว', 'success');
+      form.reset();
+      resetDateTimeDefaults();
+      loadPreview();
+    }).catch(function (err) {
+      showMsg(msgBox, '❌ ส่งข้อมูลไม่สำเร็จ กรุณาลองใหม่ (' + err + ')', 'error');
+    }).finally(function () {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'ส่งแจ้งซ่อม';
+    });
+  });
+
+  // ---------- รายการล่าสุด (หน้าแรก) ----------
+  function loadPreview() {
+    if (!isConfigured()) {
+      showMsg(previewMsg, 'ยังไม่ได้เชื่อมต่อ Google Sheet จึงไม่สามารถแสดงรายการล่าสุดได้', 'warn');
+      return;
+    }
+    previewMsg.className = 'msg';
+    fetch(SCRIPT_URL + '?action=list&limit=10')
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        const rows = (data && data.rows) || [];
+        if (rows.length === 0) {
+          previewBody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#9ca3af;">ยังไม่มีข้อมูล</td></tr>';
+          return;
+        }
+        previewBody.innerHTML = rows.map(function (r) {
+          return '<tr>' +
+            '<td>' + (r.date || '') + '</td>' +
+            '<td>' + (r.plate || '') + '</td>' +
+            '<td>' + (r.reporter || '') + '</td>' +
+            '<td>' + (r.issue || '') + '</td>' +
+            '<td>' + (r.urgency || '') + '</td>' +
+            '<td>' + badgeFor(r.status) + '</td>' +
+            '</tr>';
+        }).join('');
+      })
+      .catch(function (err) {
+        showMsg(previewMsg, 'โหลดรายการล่าสุดไม่สำเร็จ (' + err + ')', 'error');
+      });
+  }
+
+  // ---------- ประวัติทั้งหมด + แก้ไข ----------
+  function loadHistory() {
+    if (!isConfigured()) {
+      showMsg(historyMsg, 'ยังไม่ได้เชื่อมต่อ Google Sheet (ดูคู่มือติดตั้ง)', 'warn');
+      historyBody.innerHTML = '';
+      return;
+    }
+    historyMsg.className = 'msg';
+    historyBody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#9ca3af;">กำลังโหลด...</td></tr>';
+    fetch(SCRIPT_URL + '?action=list&limit=1000')
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        historyRows = (data && data.rows) || [];
+        renderHistory();
+      })
+      .catch(function (err) {
+        showMsg(historyMsg, 'โหลดประวัติไม่สำเร็จ (' + err + ')', 'error');
+      });
+  }
+
+  function renderHistory() {
+    const query = (searchBox.value || '').trim().toLowerCase();
+    const filtered = historyRows.filter(function (r) {
+      if (!query) return true;
+      return (r.plate || '').toLowerCase().indexOf(query) !== -1 ||
+             (r.reporter || '').toLowerCase().indexOf(query) !== -1;
+    });
+
+    if (filtered.length === 0) {
+      historyBody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#9ca3af;">ไม่พบข้อมูล</td></tr>';
+      return;
+    }
+
+    historyBody.innerHTML = filtered.map(function (r) {
+      return '<tr>' +
+        '<td>' + (r.date || '') + '</td>' +
+        '<td>' + (r.plate || '') + '</td>' +
+        '<td>' + (r.reporter || '') + '</td>' +
+        '<td>' + (r.issue || '') + '</td>' +
+        '<td>' + (r.urgency || '') + '</td>' +
+        '<td>' + badgeFor(r.status) + '</td>' +
+        '<td>' + (r.technician || '-') + '</td>' +
+        '<td>' + (r.finishDate || '-') + '</td>' +
+        '<td>' + (r.cost || '-') + '</td>' +
+        '<td><button class="edit-btn" onclick="openEditModal(\'' + r.id + '\')">แก้ไข</button></td>' +
+        '</tr>';
+    }).join('');
+  }
+
+  searchBox.addEventListener('input', renderHistory);
+
+  // ---------- Modal แก้ไข ----------
+  function openEditModal(id) {
+    const r = historyRows.find(function (x) { return x.id === id; });
+    if (!r) return;
+    editingId = id;
+
+    document.getElementById('editInfo').textContent =
+      'ทะเบียน: ' + (r.plate || '-') + ' | ผู้แจ้ง: ' + (r.reporter || '-') + ' | อาการ: ' + (r.issue || '-');
+    document.getElementById('editStatus').value = r.status || 'รอดำเนินการ';
+    document.getElementById('editTechnician').value = r.technician || '';
+    document.getElementById('editFinishDate').value = r.finishDate && r.finishDate !== '-' ? r.finishDate : '';
+    document.getElementById('editCost').value = r.cost || '';
+    document.getElementById('editNote').value = r.note || '';
+    document.getElementById('editMsg').className = 'msg';
+
+    document.getElementById('editOverlay').classList.add('open');
+  }
+
+  function closeEditModal() {
+    document.getElementById('editOverlay').classList.remove('open');
+    editingId = null;
+  }
+
+  function saveEdit() {
+    if (!editingId) return;
+    if (!isConfigured()) {
+      showMsg(document.getElementById('editMsg'), 'ยังไม่ได้เชื่อมต่อ Google Sheet', 'error');
+      return;
+    }
+
+    const payload = {
+      mode: 'update',
+      id: editingId,
+      status: document.getElementById('editStatus').value,
+      technician: document.getElementById('editTechnician').value.trim(),
+      finishDate: document.getElementById('editFinishDate').value,
+      cost: document.getElementById('editCost').value,
+      note: document.getElementById('editNote').value.trim()
+    };
+
+    const saveBtn = document.getElementById('saveEditBtn');
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'กำลังบันทึก...';
+
+    fetch(SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    }).then(function () {
+      closeEditModal();
+      // รอสักครู่ให้ Apps Script บันทึกเสร็จ แล้วโหลดประวัติใหม่
+      setTimeout(loadHistory, 800);
+    }).catch(function (err) {
+      showMsg(document.getElementById('editMsg'), 'บันทึกไม่สำเร็จ (' + err + ')', 'error');
+    }).finally(function () {
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'บันทึก';
+    });
+  }
+
+  document.getElementById('editOverlay').addEventListener('click', function (e) {
+    if (e.target === this) closeEditModal();
+  });
+
+  // โหลดรายการล่าสุดอัตโนมัติเมื่อเปิดหน้า (ถ้าเชื่อมต่อแล้ว)
+  loadPreview();
+</script>
+
+</body>
+</html>
