@@ -598,7 +598,7 @@
         showMsg(historyMsg, 'โหลดประวัติไม่สำเร็จ (' + err.message + ')', 'error');
       });
   }
-
+ 
   function renderHistory() {
     const query = (searchBox.value || '').trim().toLowerCase();
     const filtered = historyRows.filter(function (r) {
