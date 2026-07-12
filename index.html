@@ -444,6 +444,46 @@
     return SCRIPT_URL && SCRIPT_URL.indexOf('https://script.google.com') === 0;
   }
 
+  // อ่านข้อมูลด้วย JSONP แทน fetch ธรรมดา เพราะ Google Apps Script Web App
+  // มีการ redirect ภายใน ทำให้ fetch แบบ cors อ่านผลลัพธ์ไม่ได้ (Failed to fetch)
+  function jsonp(url) {
+    return new Promise(function (resolve, reject) {
+      const cbName = 'jsonp_cb_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
+      const script = document.createElement('script');
+      let settled = false;
+      let timer;
+
+      function cleanup() {
+        delete window[cbName];
+        if (script.parentNode) script.parentNode.removeChild(script);
+        clearTimeout(timer);
+      }
+
+      window[cbName] = function (data) {
+        settled = true;
+        cleanup();
+        resolve(data);
+      };
+
+      script.onerror = function () {
+        if (!settled) {
+          cleanup();
+          reject(new Error('เชื่อมต่อ Google Sheet ไม่สำเร็จ (ตรวจสอบลิงก์ script และการ Deploy)'));
+        }
+      };
+
+      timer = setTimeout(function () {
+        if (!settled) {
+          cleanup();
+          reject(new Error('หมดเวลาเชื่อมต่อ ลองใหม่อีกครั้ง'));
+        }
+      }, 15000);
+
+      script.src = url + (url.indexOf('?') > -1 ? '&' : '?') + 'callback=' + cbName;
+      document.body.appendChild(script);
+    });
+  }
+
   function badgeFor(status) {
     if (status === 'ซ่อมเสร็จแล้ว') return '<span class="badge done">' + status + '</span>';
     if (status === 'กำลังซ่อม') return '<span class="badge doing">' + status + '</span>';
@@ -501,7 +541,7 @@
       showMsg(msgBox, '✅ ส่งข้อมูลแจ้งซ่อมเรียบร้อยแล้ว', 'success');
       form.reset();
       resetDateTimeDefaults();
-      loadPreview();
+      setTimeout(loadPreview, 800);
     }).catch(function (err) {
       showMsg(msgBox, '❌ ส่งข้อมูลไม่สำเร็จ กรุณาลองใหม่ (' + err + ')', 'error');
     }).finally(function () {
@@ -517,8 +557,7 @@
       return;
     }
     previewMsg.className = 'msg';
-    fetch(SCRIPT_URL + '?action=list&limit=10')
-      .then(function (res) { return res.json(); })
+    jsonp(SCRIPT_URL + '?action=list&limit=10')
       .then(function (data) {
         const rows = (data && data.rows) || [];
         if (rows.length === 0) {
@@ -537,7 +576,7 @@
         }).join('');
       })
       .catch(function (err) {
-        showMsg(previewMsg, 'โหลดรายการล่าสุดไม่สำเร็จ (' + err + ')', 'error');
+        showMsg(previewMsg, 'โหลดรายการล่าสุดไม่สำเร็จ (' + err.message + ')', 'error');
       });
   }
 
@@ -550,14 +589,13 @@
     }
     historyMsg.className = 'msg';
     historyBody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#9ca3af;">กำลังโหลด...</td></tr>';
-    fetch(SCRIPT_URL + '?action=list&limit=1000')
-      .then(function (res) { return res.json(); })
+    jsonp(SCRIPT_URL + '?action=list&limit=1000')
       .then(function (data) {
         historyRows = (data && data.rows) || [];
         renderHistory();
       })
       .catch(function (err) {
-        showMsg(historyMsg, 'โหลดประวัติไม่สำเร็จ (' + err + ')', 'error');
+        showMsg(historyMsg, 'โหลดประวัติไม่สำเร็จ (' + err.message + ')', 'error');
       });
   }
 
