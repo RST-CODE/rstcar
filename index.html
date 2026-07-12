@@ -412,7 +412,7 @@
 
 <script>
   // ==== ตั้งค่าตรงนี้: วาง URL ของ Google Apps Script Web App ที่ deploy แล้ว ====
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzCqGBQyR0TcBF5tJtD7EqXlNpm_GworyC3XaOdcHo40OrZvwFUf3-uVFX05XwGmjXfBQ/exec";
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzkUow02_yiXxGDCkZHoITzhsq_PIAozYmcRwxIKtg79goCu9ZP_fuOVp09bDKX4r0/exec";
   // ==========================================================================
 
   const form = document.getElementById('repairForm');
@@ -598,7 +598,7 @@
         showMsg(historyMsg, 'โหลดประวัติไม่สำเร็จ (' + err.message + ')', 'error');
       });
   }
- 
+
   function renderHistory() {
     const query = (searchBox.value || '').trim().toLowerCase();
     const filtered = historyRows.filter(function (r) {
